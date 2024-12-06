@@ -35,7 +35,7 @@ df_cases <- df_cases %>% complete(ANO, ID_MN_RESI, age_range_new)
 df_cases[is.na(df_cases)] <- 0
 
 # Calculating for a municipality the age pattern ##########################################
-mun <- 330455
+mun <- 355030
 
 df_cases <- df_cases %>% filter(ID_MN_RESI == mun)
 df_pop <- df_pop %>% filter(Mun == mun)

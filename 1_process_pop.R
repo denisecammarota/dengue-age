@@ -12,7 +12,7 @@ for(file in file_list){
   df <- rbind(df, a)
 }
 
-df <- df %>% mutate(Mun = substr(Município,1,6))
+df <- df %>% mutate(Mun = substr(Municipio,1,6))
 colnames(df)<- c('Municipio','00 a 04', '05 a 09', '10 a 14',
                  '15 a 19', '20 a 29', '30 a 39', '40 a 49',
                  '50 a 59', '60 a 69', '70 a 79', '80 e +', 
