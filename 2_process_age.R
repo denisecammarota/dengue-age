@@ -35,62 +35,66 @@ df_cases <- df_cases %>% complete(ANO, ID_MN_RESI, age_range_new)
 df_cases[is.na(df_cases)] <- 0
 
 # Calculating for a municipality the age pattern ##########################################
-mun <- 355030
 
-df_cases <- df_cases %>% filter(ID_MN_RESI == mun)
-df_pop <- df_pop %>% filter(Mun == mun)
-df_cases <- df_cases %>% pivot_wider(names_from = age_range_new, values_from = n_cases)
-df_cases <- df_cases %>% select(!c(ANO, ID_MN_RESI)) # matrix of cases
-df_pop <- df_pop %>% select(!c(Ano, Mun)) # matrix of population
+mean_age_pattern <- function(mun){
+  df_cases <- df_cases %>% filter(ID_MN_RESI == mun)
+  df_pop <- df_pop %>% filter(Mun == mun)
+  df_cases <- df_cases %>% pivot_wider(names_from = age_range_new, values_from = n_cases)
+  df_cases <- df_cases %>% select(!c(ANO, ID_MN_RESI)) # matrix of cases
+  df_pop <- df_pop %>% select(!c(Ano, Mun)) # matrix of population
+  df_tmp <- data.frame(rowSums(df_cases))
+  df_cases_year <- data.frame(replicate(11, df_tmp$rowSums.df_cases.))
+  colnames(df_cases_year) <- colnames(df_cases)
+  # turning everything into numeric
+  df_cases <- data.frame(lapply(df_cases, as.numeric))
+  df_pop <- data.frame(lapply(df_pop, as.numeric))
+  df_cases_year <- data.frame(lapply(df_cases_year, as.numeric))
+  # dividing to get age pattern
+  df_final <- df_cases
+  df_final <- df_final/df_pop
+  df_final <- df_final/df_cases_year
+  df_final['Ano'] <- seq(2007,2020,1)
+  df_final <- df_final %>% pivot_longer(!Ano, names_to = 'age_range', values_to = 'rate')
+  df_mean <- df_final %>% group_by(age_range) %>% summarise(rate = mean(rate)) 
+  df_mean <- df_mean %>% ungroup()
+  df_mean['Ano'] <- 'Mean'
+  df_mean <- df_mean %>% select(Ano, age_range, rate)
+  name_file <- paste0('age_patterns/mean_age_',paste0(str(mun),'.RData'))
+  #save(df_mean, file = name_file)
+  return(df_mean)
+}
 
-df_tmp <- data.frame(rowSums(df_cases))
-df_cases_year <- data.frame(replicate(11, df_tmp$rowSums.df_cases.))
-colnames(df_cases_year) <- colnames(df_cases)
 
-# turning everything into numeric
-df_cases <- data.frame(lapply(df_cases, as.numeric))
-df_pop <- data.frame(lapply(df_pop, as.numeric))
-df_cases_year <- data.frame(lapply(df_cases_year, as.numeric))
-  
-# dividing to get age pattern
-df_final <- df_cases
-df_final <- df_final/df_pop
-df_final <- df_final/df_cases_year
+age_pattern <- function(mun){
+  df_cases <- df_cases %>% filter(ID_MN_RESI == mun)
+  df_pop <- df_pop %>% filter(Mun == mun)
+  df_cases <- df_cases %>% pivot_wider(names_from = age_range_new, values_from = n_cases)
+  df_cases <- df_cases %>% select(!c(ANO, ID_MN_RESI)) # matrix of cases
+  df_pop <- df_pop %>% select(!c(Ano, Mun)) # matrix of population
+  df_tmp <- data.frame(rowSums(df_cases))
+  df_cases_year <- data.frame(replicate(11, df_tmp$rowSums.df_cases.))
+  colnames(df_cases_year) <- colnames(df_cases)
+  # turning everything into numeric
+  df_cases <- data.frame(lapply(df_cases, as.numeric))
+  df_pop <- data.frame(lapply(df_pop, as.numeric))
+  df_cases_year <- data.frame(lapply(df_cases_year, as.numeric))
+  # dividing to get age pattern
+  df_final <- df_cases
+  df_final <- df_final/df_pop
+  df_final <- df_final/df_cases_year
+  df_final['Ano'] <- seq(2007,2020,1)
+  df_final <- df_final %>% pivot_longer(!Ano, names_to = 'age_range', values_to = 'rate')
+  name_file <- paste0('age_patterns/age_',paste0(str(mun),'.RData'))
+  #save(df_final, file = name_file)
+  return(df_final)
+}
 
-# plotting the pattern
-colnames(df_final) <- colnames(df_cases)
-df_final['Ano'] <- seq(2007,2020,1)
-df_final <- df_final %>% pivot_longer(!Ano, names_to = 'age_range', values_to = 'rate')
+# Plotting and trying out these plots ###################################################################
 
-p <- ggplot(df_final, aes(x = age_range, y = rate, color = factor(Ano), group = Ano)) + 
-  geom_point() + 
-  geom_line() + 
-  labs(
-    x = "Age Range",
-    y = "Rate",
-    color = "Year"
-  ) +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-p
+## The mean age pattern plot ############################################################################
+df_mean <- mean_age_pattern(355030)
+ggplot(df_mean, aes(x = age_range, y = rate)) + geom_line(group = 1) + geom_point(group = 1)
 
-# doing the mean and standar deviation
-df_mean <- df_final %>% group_by(age_range) %>% summarise(rate = mean(rate)) 
-df_mean <- df_mean %>% ungroup()
-df_mean['Ano'] <- 'Mean'
-df_mean <- df_mean %>% select(Ano, age_range, rate)
-ggplot(df_mean, aes(x = age_range, y = rate)) + geom_point(group = 1) + geom_line(group = 1)
-
-# plotting everything together
-a <- rbind(df_final, df_mean)
-p <- ggplot(a, aes(x = age_range, y = rate, color = factor(Ano), group = Ano)) + 
-  geom_point() + 
-  geom_line() + 
-  labs(
-    x = "Age Range",
-    y = "Rate",
-    color = "Year"
-  ) +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-p
+## The total age pattern plot ###########################################################################
+df_final <- age_pattern(355030)
+ggplot(df_final, aes(x = age_range, y = rate, color = factor(Ano), group = Ano)) + geom_line() + geom_point()
